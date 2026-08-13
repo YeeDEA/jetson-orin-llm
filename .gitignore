@@ -1,0 +1,24 @@
+# notebook noise
+.ipynb_checkpoints/
+__pycache__/
+
+# training artifacts / checkpoints
+results/
+trained_adapter/
+*.pth
+*.safetensors
+*.bin
+*.engine
+*.plan
+
+# datasets (regenerate with 01-dataset-synthesis.ipynb)
+robot_dataset.json
+*.csv
+
+# env / secrets
+.env
+.netrc
+
+# OS
+.DS_Store
+Thumbs.db
