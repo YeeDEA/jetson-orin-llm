@@ -8,6 +8,28 @@ An 8B-parameter model does not fit on an 8GB edge board in half precision, and i
 
 **Status: archived experiment notebooks** — a 2-day sprint (December 2025), kept as a record of the pipeline and its failure modes. Not a maintained tool.
 
+## Repository structure
+
+```
+notebooks/                     original Colab experiments (run in numeric order)
+  01-dataset-synthesis.ipynb
+  02-qlora-llama3-8b.ipynb
+  03-tinyllama-awq-rehearsal.ipynb
+  04-llama3-awq-orin-deploy.ipynb
+src/jetson_llm/                the same code extracted into importable modules
+  data.py                      dataset synthesis (from notebook 01)
+  train.py                     QLoRA setup + training (from notebook 02, cell-4 variant)
+scripts/                       thin entrypoints over src/ and the shell command sequences
+  generate_dataset.py          CLI for dataset synthesis
+  train_qlora.py               CLI for the QLoRA run
+  tinyllama_awq_rehearsal.sh   convert -> build -> run (from notebook 03)
+  llama3_awq_convert.sh        Llama-3 8B INT4 AWQ conversion, Colab side (notebook 04)
+  orin_deploy.sh               Jetson container/build/run procedure (notebook 04)
+docs/README.ko.md              original Korean README
+```
+
+The notebooks are the original Colab experiments; `src/` is the same code extracted into importable modules (no new functionality, bugs preserved).
+
 ## Pipeline
 
 ```
@@ -26,10 +48,10 @@ An 8B-parameter model does not fit on an 8GB edge board in half precision, and i
 
 | # | Notebook | What it does |
 |---|---|---|
-| 1 | `01-dataset-synthesis.ipynb` | Synthesizes 50,000 instruction/output pairs (natural-language command → robot control code) into `robot_dataset.json` using pure-Python templating |
-| 2 | `02-qlora-llama3-8b.ipynb` | QLoRA fine-tuning of Llama-3 8B Instruct on the T4: NF4 double quantization, LoRA r=64 on all attention + MLP projections, TRL `SFTTrainer`. Contains the BF16/OOM debugging log (see below) |
-| 3 | `03-tinyllama-awq-rehearsal.ipynb` | Full TensorRT-LLM rehearsal on **TinyLlama-1.1B-Chat**: `convert_checkpoint.py --use_weight_only --weight_only_precision int4_awq` → `trtllm-build` → `run.py` inference. Small model, same commands |
-| 4 | `04-llama3-awq-orin-deploy.ipynb` | The same INT4 AWQ conversion applied to **Llama-3 8B**, plus the Jetson Orin deployment procedure: `docker run --runtime nvidia` with `dustynv/tensorrt_llm:r36.2.0` and engine files mounted from `/data` |
+| 1 | `notebooks/01-dataset-synthesis.ipynb` | Synthesizes 50,000 instruction/output pairs (natural-language command → robot control code) into `robot_dataset.json` using pure-Python templating |
+| 2 | `notebooks/02-qlora-llama3-8b.ipynb` | QLoRA fine-tuning of Llama-3 8B Instruct on the T4: NF4 double quantization, LoRA r=64 on all attention + MLP projections, TRL `SFTTrainer`. Contains the BF16/OOM debugging log (see below) |
+| 3 | `notebooks/03-tinyllama-awq-rehearsal.ipynb` | Full TensorRT-LLM rehearsal on **TinyLlama-1.1B-Chat**: `convert_checkpoint.py --use_weight_only --weight_only_precision int4_awq` → `trtllm-build` → `run.py` inference. Small model, same commands |
+| 4 | `notebooks/04-llama3-awq-orin-deploy.ipynb` | The same INT4 AWQ conversion applied to **Llama-3 8B**, plus the Jetson Orin deployment procedure: `docker run --runtime nvidia` with `dustynv/tensorrt_llm:r36.2.0` and engine files mounted from `/data` |
 
 Notebooks 3 and 4 are deliberately separate: 3 is the cheap rehearsal that validates the toolchain, 4 is the real 8B run targeting the board.
 
@@ -61,10 +83,10 @@ No inference throughput or latency numbers were captured in the notebook outputs
 Everything is Colab-oriented; run the notebooks in numeric order.
 
 1. **HF access**: Llama-3 is gated. Store your token as a Colab Secret named `HF_TOKEN` (the notebooks call `huggingface_hub.login()`; never paste a token into a cell).
-2. `01-dataset-synthesis.ipynb` — produces `robot_dataset.json` (50k pairs). CPU-only.
-3. `02-qlora-llama3-8b.ipynb` — needs a T4 (or better). Expect to fight the dtype/OOM issues above on a 16GB card; the last cell variant is the furthest-debugged one.
-4. `03-tinyllama-awq-rehearsal.ipynb` — validates your TensorRT-LLM install end-to-end in minutes.
-5. `04-llama3-awq-orin-deploy.ipynb` — convert/build for the 8B model, copy the engine to the Orin, and run it inside `dustynv/tensorrt_llm:r36.2.0` (`docker run -it --rm --runtime nvidia --network host ...` with the engine directory mounted).
+2. `notebooks/01-dataset-synthesis.ipynb` — produces `robot_dataset.json` (50k pairs). CPU-only.
+3. `notebooks/02-qlora-llama3-8b.ipynb` — needs a T4 (or better). Expect to fight the dtype/OOM issues above on a 16GB card; the last cell variant is the furthest-debugged one.
+4. `notebooks/03-tinyllama-awq-rehearsal.ipynb` — validates your TensorRT-LLM install end-to-end in minutes.
+5. `notebooks/04-llama3-awq-orin-deploy.ipynb` — convert/build for the 8B model, copy the engine to the Orin, and run it inside `dustynv/tensorrt_llm:r36.2.0` (`docker run -it --rm --runtime nvidia --network host ...` with the engine directory mounted).
 
 ## Provenance
 
@@ -72,10 +94,10 @@ These were Colab notebooks organized later; original names and dates:
 
 | Current file | Original name | Date |
 |---|---|---|
-| `01-dataset-synthesis.ipynb` | `Llama 데이터셋 만들기.ipynb` | 2025-12-16 |
-| `02-qlora-llama3-8b.ipynb` | `Quantization_0.ipynb` | 2025-12-16 |
-| `03-tinyllama-awq-rehearsal.ipynb` | `양자화테스트.ipynb` | 2025-12-16 |
-| `04-llama3-awq-orin-deploy.ipynb` | `양자화테스트_orin_초기버전.ipynb` | 2025-12-15 |
+| `notebooks/01-dataset-synthesis.ipynb` | `Llama 데이터셋 만들기.ipynb` | 2025-12-16 |
+| `notebooks/02-qlora-llama3-8b.ipynb` | `Quantization_0.ipynb` | 2025-12-16 |
+| `notebooks/03-tinyllama-awq-rehearsal.ipynb` | `양자화테스트.ipynb` | 2025-12-16 |
+| `notebooks/04-llama3-awq-orin-deploy.ipynb` | `양자화테스트_orin_초기버전.ipynb` | 2025-12-15 |
 
 Work period: 2025-12-15 – 2025-12-16. Original Korean README preserved at [`docs/README.ko.md`](docs/README.ko.md).
 

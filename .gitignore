@@ -11,7 +11,7 @@ trained_adapter/
 *.engine
 *.plan
 
-# datasets (regenerate with 01-dataset-synthesis.ipynb)
+# datasets (regenerate with scripts/generate_dataset.py or notebooks/01-dataset-synthesis.ipynb)
 robot_dataset.json
 *.csv
 
