@@ -28,23 +28,25 @@ def main() -> None:
     rows = [json.loads(p.read_text(encoding="utf-8")) for p in paths]
     rows.sort(key=lambda r: -r["measurements"]["peak_memory_gb"])
 
-    baseline = next(
-        (r["measurements"]["decode_tokens_per_s_median"] for r in rows if r["quant"] == "fp16"),
-        None,
-    )
+    rows.sort(key=lambda r: r["model"])
+    fp16 = {r["model"]: r["measurements"]["decode_tokens_per_s_median"]
+            for r in rows if r["quant"] == "fp16"}
 
-    print("| Precision | Decode (tok/s) | TTFT (s) | Peak memory (GB) | vs FP16 |")
-    print("|---|---|---|---|---|")
+    print("| Model | Precision | Decode tok/s, median (min-max) | TTFT (s) | Peak memory (GB) | Decode vs FP16 |")
+    print("|---|---|---|---|---|---|")
     for r in rows:
         m = r["measurements"]
+        baseline = fp16.get(r["model"])
+        allr = m["decode_tokens_per_s_all"]
         speedup = (
             f"{m['decode_tokens_per_s_median'] / baseline:.2f}x"
             if baseline
-            else "—"
+            else "n/a"
         )
         print(
+            f"| {r['model'].split('/')[-1]} "
             f"| {QUANT_LABEL.get(r['quant'], r['quant'])} "
-            f"| {m['decode_tokens_per_s_median']:.1f} "
+            f"| {m['decode_tokens_per_s_median']:.1f} ({min(allr):.1f}-{max(allr):.1f}) "
             f"| {m['ttft_s_median']:.3f} "
             f"| {m['peak_memory_gb']:.2f} "
             f"| {speedup} |"

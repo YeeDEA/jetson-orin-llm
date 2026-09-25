@@ -1,12 +1,20 @@
-# Colab-side stack (notebooks installed latest-at-the-time, Dec 2025; loose pins below)
-torch>=2.4
-transformers>=4.44
-peft>=0.12
-trl>=0.9
-bitsandbytes>=0.43
-datasets>=2.20
-huggingface_hub>=0.24
+# Exact versions used for the measured results in the README
+# (RTX 5050 Laptop GPU, Windows 11, Python 3.12.10, Sep 2026).
+# torch comes from the CUDA 13.0 index:
+#   pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cu130
+torch==2.13.0
+transformers==4.57.6
+tokenizers==0.22.2
+safetensors==0.8.0
+accelerate==1.14.0
+peft==0.21.0
+bitsandbytes==0.50.2
+datasets==5.0.1
+huggingface_hub==0.36.2
+trl==1.14.0  # only needed to re-run the original notebook 02 cells
+pytest==9.1.1
 
-# TensorRT-LLM comes from NVIDIA's index (pre-release channel used in the notebooks):
+# The Dec 2025 Colab notebooks installed unpinned latest versions; those are not recorded.
+# TensorRT-LLM (not used for any measured result here) comes from NVIDIA's index:
 #   pip install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
 # On the Jetson Orin, use the container instead: dustynv/tensorrt_llm:r36.2.0
