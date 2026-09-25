@@ -2,7 +2,9 @@
 
 [![tests](https://github.com/YeeDEA/jetson-orin-llm/actions/workflows/tests.yml/badge.svg)](https://github.com/YeeDEA/jetson-orin-llm/actions/workflows/tests.yml)
 
-A QLoRA fine-tune of Llama-3 8B, quantized to INT4 AWQ and built into a TensorRT-LLM engine for a Jetson Orin Nano 8GB — trained on a free Colab T4, run on the board inside the `dustynv/tensorrt_llm` container.
+A pipeline aimed at running a QLoRA fine-tune of Llama-3 8B as an INT4 AWQ TensorRT-LLM engine on a Jetson Orin Nano 8GB: synthetic data, QLoRA on a free Colab T4, AWQ conversion, and an on-board deployment procedure for the `dustynv/tensorrt_llm` container.
+
+**The Jetson Orin board is no longer available, so no on-device Orin or TensorRT-LLM number was ever measured and none will be.** The Llama-3 8B QLoRA run also never completed (see [Where it broke](#where-it-broke)). Every measured result in this repository comes from an RTX 5050 laptop GPU: a completed TinyLlama-1.1B QLoRA fine-tune, its held-out accuracy at FP16 and NF4, bitsandbytes latency/memory, and a memory measurement of the k-bit prep step that caused the 8B OOM. The Orin notebooks and scripts are kept as the record of the intended deployment path, not as validated results.
 
 *Work period: 2025-12-15 – 2025-12-16, in Google Colab. Published here Aug 2026, when those notebooks were reorganized into this repository — so the git history starts at that import, not at the work. File-by-file mapping in [Provenance](#provenance).*
 
@@ -173,7 +175,7 @@ Notebooks 3 and 4 are deliberately separate: 3 is the cheap rehearsal that valid
 | Component | Value |
 |---|---|
 | Training GPU | Colab T4 (14.74 GiB usable, per the OOM traces); Sep 2026 re-runs: RTX 5050 Laptop 8 GB |
-| Target device | Jetson Orin Nano 8GB |
+| Target device | Jetson Orin Nano 8GB (no longer available; never measured) |
 | Orin runtime | `dustynv/tensorrt_llm:r36.2.0` (JetPack 6 / L4T r36.2) |
 | TensorRT-LLM (Colab side) | pre-release from `https://pypi.nvidia.com` (`pip install tensorrt_llm -U --pre`), Dec 2025 |
 | Models | `meta-llama/Meta-Llama-3-8B-Instruct` (also a 3.1-8B attempt), `TinyLlama/TinyLlama-1.1B-Chat-v1.0` |
@@ -181,16 +183,15 @@ Notebooks 3 and 4 are deliberately separate: 3 is the cheap rehearsal that valid
 
 The notebooks install unpinned latest versions, which is the single biggest reproducibility hazard here — the TensorRT-LLM pre-release channel and `transformers` both moved fast in this period.
 
-## What nobody measured
+## Not measured (board no longer available)
 
-The [measured results](#measured-results-rtx-5050-laptop-gpu-not-the-orin) above cover accuracy, bitsandbytes latency/memory and the k-bit-prep memory pair on a laptop GPU. What is still unmeasured is everything on the actual target:
+This list is closed: the Jetson Orin Nano is no longer available, so none of the following was measured and none will be.
 
-- **Decode throughput, TTFT and peak memory for the INT4 AWQ TensorRT-LLM engine on the Jetson Orin Nano 8GB**, at batch 1 and the engine's build settings (`--max_batch_size 1`, `--max_input_len 2048`, `--max_output_len 512`), plus peak memory during `trtllm-build` (the build, not the run, is often what fails on an edge device).
-- **The same for the TinyLlama-1.1B engine** as a control, and for the FP16 checkpoint it was converted from as a baseline.
-- **Accuracy of the AWQ engine** on the held-out split (the accuracy numbers above are bitsandbytes NF4, not AWQ).
-- **The Llama-3 8B QLoRA run itself**: peak memory with and without the upcast at 8B (only TinyLlama was measured), and whether it completes on a 16 GB card.
+- Decode throughput, TTFT and peak memory of the INT4 AWQ TensorRT-LLM engine on the Orin (and of the TinyLlama engine or its FP16 source as a control), and peak memory during `trtllm-build` on the board.
+- Accuracy of the AWQ engine on the held-out split (the accuracy numbers above are bitsandbytes NF4 on the laptop GPU, not AWQ).
+- The Llama-3 8B QLoRA run itself, with or without the upcast (only TinyLlama was measured).
 
-Notebooks 03 and 04 were saved with their output cells empty, so the Dec 2025 TensorRT-LLM runs left no logs. No Orin and no TensorRT-LLM install were available for the Sep 2026 measurements.
+Notebooks 03 and 04 were saved with their output cells empty, so the Dec 2025 TensorRT-LLM runs left no logs, and no TensorRT-LLM install was available for the Sep 2026 laptop measurements.
 
 ## Repository layout
 
@@ -238,7 +239,7 @@ Original Korean README preserved at [`docs/README.ko.md`](docs/README.ko.md).
 **Status: archived experiment notebooks** — a 2-day sprint (December 2025), kept as a record of the pipeline and its failure modes. Not a maintained tool.
 
 - The Llama-3 8B QLoRA run never completed on the free T4; the last recorded state is the FP32-upcast OOM. The TinyLlama measurement supports removing the upcast; it is untested at 8B.
-- A TinyLlama QLoRA fine-tune was completed and evaluated on a laptop RTX 5050 (91.0% exact match on held-out, unchanged at NF4). No on-device Orin / TensorRT-LLM numbers exist; see [What nobody measured](#what-nobody-measured).
+- A TinyLlama QLoRA fine-tune was completed and evaluated on a laptop RTX 5050 (91.0% exact match on held-out, unchanged at NF4). No on-device Orin / TensorRT-LLM numbers exist; the board is no longer available, see [Not measured](#not-measured-board-no-longer-available).
 - The synthetic dataset is templated and narrow (24 distinct grab instructions), and direction-less rotate commands get a random sign, which makes about 20% of held-out labels unpredictable.
 - `requirements.txt` pins the Sep 2026 laptop environment; the Dec 2025 Colab versions were never recorded, and `convert_checkpoint.py` / `trtllm-build` flags have likely changed since.
 - CPU tests (`python -m pytest tests`) cover dataset determinism/format, splits and the scorer; the GPU scripts are not covered by CI.
