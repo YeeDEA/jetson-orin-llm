@@ -52,3 +52,31 @@ def test_generate_dataset_writes_json(tmp_path):
     path = tmp_path / "d.json"
     data = generate_dataset(target_count=20, output_file=str(path))
     assert json.loads(path.read_text(encoding="utf-8")) == data
+
+
+def test_rotate_label_is_deterministic_given_instruction():
+    """v2: an instruction string always maps to one rotate label."""
+    labels = {}
+    for s in generate_samples(3000, seed=2):
+        if s["output"].startswith("robot.rotate"):
+            labels.setdefault(s["instruction"], set()).add(s["output"])
+    assert labels and all(len(v) == 1 for v in labels.values())
+    for ins, (out,) in labels.items():
+        angle = int(re.search(r"\((-?\d+)\)", out).group(1))
+        if not any(d in ins for d in ("left", "right", "front", "back")):
+            assert angle > 0, (ins, out)
+        elif any(d in ins for d in ("left", "back")):
+            assert angle < 0, (ins, out)
+
+
+def test_legacy_rotate_reproduces_v1():
+    v1 = generate_samples(3000, seed=2, legacy_rotate=True)
+    v2 = generate_samples(3000, seed=2)
+    assert [s["instruction"] for s in v1] == [s["instruction"] for s in v2]
+    diff = [(a, b) for a, b in zip(v1, v2) if a != b]
+    assert diff and all(a["output"] == b["output"].replace("(", "(-", 1) for a, b in diff)
+    ambiguous = {}
+    for s in v1:
+        if s["output"].startswith("robot.rotate"):
+            ambiguous.setdefault(s["instruction"], set()).add(s["output"])
+    assert any(len(v) > 1 for v in ambiguous.values())

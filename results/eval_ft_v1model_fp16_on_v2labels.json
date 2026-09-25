@@ -1,0 +1,154 @@
+{
+  "tag": "ft_v1model_fp16_on_v2labels",
+  "model": "runs/tinyllama_merged",
+  "quant": "fp16",
+  "shots": 0,
+  "adapter": null,
+  "command": "scripts/eval_accuracy.py --model runs/tinyllama_merged --dataset-version 2 --quant fp16 --tag ft_v1model_fp16_on_v2labels --out results/eval_ft_v1model_fp16_on_v2labels.json",
+  "split": {
+    "train_count": 8000,
+    "test_count": 500,
+    "seed": 0,
+    "dataset_version": 2,
+    "unseen_instruction_count": 92
+  },
+  "scores": {
+    "overall": {
+      "n": 500,
+      "exact_match": 0.802,
+      "valid_code": 1.0
+    },
+    "by_type": {
+      "complex": {
+        "n": 128,
+        "exact_match": 1.0,
+        "valid_code": 1.0
+      },
+      "grab": {
+        "n": 125,
+        "exact_match": 1.0,
+        "valid_code": 1.0
+      },
+      "move": {
+        "n": 112,
+        "exact_match": 1.0,
+        "valid_code": 1.0
+      },
+      "rotate": {
+        "n": 135,
+        "exact_match": 0.2667,
+        "valid_code": 1.0
+      }
+    },
+    "unseen_instruction": {
+      "n": 92,
+      "exact_match": 1.0,
+      "valid_code": 1.0
+    }
+  },
+  "eval_seconds": 16.9,
+  "peak_memory_gb": 2.178,
+  "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
+  "examples": [
+    {
+      "instruction": "Navigate to bathroom, then grab the remote",
+      "reference": "robot.navigate('bathroom')\nrobot.grab('remote')",
+      "prediction": "robot.navigate('bathroom')\nrobot.grab('remote')"
+    },
+    {
+      "instruction": "Grab that bottle",
+      "reference": "robot.grab('bottle')",
+      "prediction": "robot.grab('bottle')"
+    },
+    {
+      "instruction": "Grab that remote",
+      "reference": "robot.grab('remote')",
+      "prediction": "robot.grab('remote')"
+    },
+    {
+      "instruction": "Get the smartphone for me",
+      "reference": "robot.grab('smartphone')",
+      "prediction": "robot.grab('smartphone')"
+    },
+    {
+      "instruction": "Please advance 232cm left",
+      "reference": "robot.move('left', 232)",
+      "prediction": "robot.move('left', 232)"
+    },
+    {
+      "instruction": "Find the trash in the kitchen",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('trash')",
+      "prediction": "robot.navigate('kitchen')\nrobot.grab('trash')"
+    },
+    {
+      "instruction": "Please advance 378cm front",
+      "reference": "robot.move('front', 378)",
+      "prediction": "robot.move('front', 378)"
+    },
+    {
+      "instruction": "Go to the kitchen and bring me the smartphone",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('smartphone')",
+      "prediction": "robot.navigate('kitchen')\nrobot.grab('smartphone')"
+    },
+    {
+      "instruction": "Turn 90 degrees",
+      "reference": "robot.rotate(90)",
+      "prediction": "robot.rotate(-90)"
+    },
+    {
+      "instruction": "left 458cm, now",
+      "reference": "robot.move('left', 458)",
+      "prediction": "robot.move('left', 458)"
+    },
+    {
+      "instruction": "Hold the remote",
+      "reference": "robot.grab('remote')",
+      "prediction": "robot.grab('remote')"
+    },
+    {
+      "instruction": "Go to the entrance and bring me the trash",
+      "reference": "robot.navigate('entrance')\nrobot.grab('trash')",
+      "prediction": "robot.navigate('entrance')\nrobot.grab('trash')"
+    },
+    {
+      "instruction": "Hold the cup",
+      "reference": "robot.grab('cup')",
+      "prediction": "robot.grab('cup')"
+    },
+    {
+      "instruction": "Go to the kitchen and bring me the bottle",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('bottle')",
+      "prediction": "robot.navigate('kitchen')\nrobot.grab('bottle')"
+    },
+    {
+      "instruction": "Navigate to entrance, then grab the bottle",
+      "reference": "robot.navigate('entrance')\nrobot.grab('bottle')",
+      "prediction": "robot.navigate('entrance')\nrobot.grab('bottle')"
+    },
+    {
+      "instruction": "Pick up the cup",
+      "reference": "robot.grab('cup')",
+      "prediction": "robot.grab('cup')"
+    },
+    {
+      "instruction": "Find the bottle in the kitchen",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('bottle')",
+      "prediction": "robot.navigate('kitchen')\nrobot.grab('bottle')"
+    },
+    {
+      "instruction": "Hold the trash",
+      "reference": "robot.grab('trash')",
+      "prediction": "robot.grab('trash')"
+    },
+    {
+      "instruction": "Go to the living room and bring me the smartphone",
+      "reference": "robot.navigate('living room')\nrobot.grab('smartphone')",
+      "prediction": "robot.navigate('living room')\nrobot.grab('smartphone')"
+    },
+    {
+      "instruction": "Go front for 73cm",
+      "reference": "robot.move('front', 73)",
+      "prediction": "robot.move('front', 73)"
+    }
+  ]
+}

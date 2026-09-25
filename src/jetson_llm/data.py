@@ -4,6 +4,18 @@ Extracted verbatim from notebooks/01-dataset-synthesis.ipynb (single code cell),
 reorganized into functions. Generates instruction/output pairs mapping
 natural-language commands to robot control code (e.g. "Go left for 30cm"
 -> "robot.move('left', 30)").
+
+Dataset versions
+----------------
+v1 (the notebook, and every result file without a ``dataset_version`` key):
+    rotate patterns with no direction word ("Turn 90 degrees", "Spin 180
+    degrees", "Make a 90 degree turn") still drew a random direction and signed
+    the angle with it, so the label was a coin flip the model could not infer.
+v2 (default): a rotate instruction that states no direction always gets the
+    positive (default, right/clockwise) angle. Instructions and the RNG draw
+    sequence are unchanged, so for a given seed v1 and v2 contain the same
+    instruction strings and differ only in those labels. Pass
+    ``legacy_rotate=True`` (``--dataset-version 1`` on the CLIs) to reproduce v1.
 """
 
 import json
@@ -15,6 +27,8 @@ actions = ["move", "rotate", "grab", "stop", "scan"]
 directions = ["front", "back", "left", "right"]
 objects = ["cup", "bottle", "trash", "book", "remote", "smartphone"]
 places = ["kitchen", "living room", "bedroom", "bathroom", "entrance"]
+DATASET_VERSION = 2
+
 adverbs = ["slowly", "quickly", "carefully", "immediately"]  # NOTE: defined but never used in the notebook
 
 # Natural-language templates (multiple patterns per action type for diversity)
@@ -62,8 +76,12 @@ templates = [
 ]
 
 
-def generate_sample():
-    """Generate one {"instruction", "output"} pair. Verbatim from the notebook."""
+def generate_sample(legacy_rotate=False):
+    """Generate one {"instruction", "output"} pair.
+
+    Verbatim from the notebook except for the rotate label fix (dataset v2, see
+    the module docstring); ``legacy_rotate=True`` gives the notebook's v1 labels.
+    """
     template = random.choice(templates)
 
     # random values
@@ -82,6 +100,8 @@ def generate_sample():
         output = f"robot.move('{direction}', {dist})"
     elif template["type"] == "rotate":
         dir_param = 1 if direction in ['right', 'front'] else -1  # example logic (notebook comment: 예시 로직)
+        if not legacy_rotate and "{direction}" not in pattern:
+            dir_param = 1  # v2: no direction stated -> default positive angle
         output = f"robot.rotate({angle * dir_param})"
     elif template["type"] == "grab":
         output = f"robot.grab('{obj}')"
@@ -95,7 +115,7 @@ def generate_sample():
     }
 
 
-def generate_dataset(target_count=50000, output_file="robot_dataset.json"):
+def generate_dataset(target_count=50000, output_file="robot_dataset.json", legacy_rotate=False):
     """Generate `target_count` samples and save them to `output_file`.
 
     The notebook hard-coded TARGET_COUNT = 50000 and
@@ -105,7 +125,7 @@ def generate_dataset(target_count=50000, output_file="robot_dataset.json"):
     data = []
 
     for i in range(target_count):
-        data.append(generate_sample())
+        data.append(generate_sample(legacy_rotate))
         if (i + 1) % 10000 == 0:
             print(f"{i + 1} samples generated...")
 
@@ -118,7 +138,7 @@ def generate_dataset(target_count=50000, output_file="robot_dataset.json"):
     return data
 
 
-def generate_samples(count, seed):
+def generate_samples(count, seed, legacy_rotate=False):
     """Deterministic list of `count` samples drawn with a private RNG seeded by `seed`.
 
     Uses the same templates and value ranges as ``generate_sample`` but does not
@@ -129,12 +149,12 @@ def generate_samples(count, seed):
     saved = random.getstate()
     random.setstate(rng.getstate())
     try:
-        return [generate_sample() for _ in range(count)]
+        return [generate_sample(legacy_rotate) for _ in range(count)]
     finally:
         random.setstate(saved)
 
 
-def make_splits(train_count, test_count, seed=0):
+def make_splits(train_count, test_count, seed=0, legacy_rotate=False):
     """Build (train, test) as two independent draws from the generator.
 
     ``test`` is drawn with ``seed`` and ``train`` with ``seed + 1``, so no test
@@ -145,8 +165,8 @@ def make_splits(train_count, test_count, seed=0):
     the subset whose instruction string never appears in train
     (see ``unseen_mask``).
     """
-    test = generate_samples(test_count, seed)
-    train = generate_samples(train_count, seed + 1)
+    test = generate_samples(test_count, seed, legacy_rotate)
+    train = generate_samples(train_count, seed + 1, legacy_rotate)
     return train, test
 
 

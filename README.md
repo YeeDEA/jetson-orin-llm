@@ -26,7 +26,7 @@ Added Sep 2026. **Everything in this section was measured on an NVIDIA GeForce R
 
 TinyLlama-1.1B-Chat, QLoRA (NF4 base, LoRA r=64/alpha=16 on all attention + MLP projections, bf16 compute, lr 2e-4, batch 16, 1 epoch over 8,000 synthetic training examples = 500 steps). Training took 373 s, peak training memory 1.82 GB, final logged loss 0.0136 (`results/train_tinyllama.json`).
 
-Held-out: 500 examples drawn by `make_splits(8000, 500, seed=0)` from a separate seeded RNG stream and never passed to the trainer. Greedy decoding, max 48 new tokens. *Exact match* = output string equals the reference; *valid code* = output parses and every statement is `robot.<known method>(<literals>)`.
+Held-out: 500 examples drawn by `make_splits(8000, 500, seed=0)` (dataset v1 labels in this first table) from a separate seeded RNG stream and never passed to the trainer. Greedy decoding, max 48 new tokens. *Exact match* = output string equals the reference; *valid code* = output parses and every statement is `robot.<known method>(<literals>)`.
 
 | Model | Weights | Exact match (500) | Valid code (500) | Exact match, unseen-string subset (92) | Eval peak mem (GB) |
 |---|---|---|---|---|---|
@@ -37,18 +37,39 @@ Held-out: 500 examples drawn by `make_splits(8000, 500, seed=0)` from a separate
 
 So on this task **NF4 cost 0.0 points of exact match** (455/500 in both) for **2.6x less eval memory**, and, from the benchmark below, about 21% lower decode throughput on this GPU. The base model zero-shot answers in prose ("To navigate to the bathroom in your home, follow these steps..."), so the zero-shot 0% is a formatting failure; the 3-shot row is the fairer baseline.
 
-Two things about the dataset that these numbers exposed, and that change how to read them:
+The table above is **dataset v1** (the notebook's labels). Two things about that dataset that these numbers exposed:
 
-- **All 45 fine-tuned misses are `rotate` commands, and most are unanswerable.** Patterns like "Turn 90 degrees" or "Spin 180 degrees" contain no direction, but the generator still picks a random direction and signs the angle with it (`robot.rotate(90)` vs `robot.rotate(-90)`). 99 of the 135 held-out rotate examples have no direction word, so their label is a coin flip; rotate exact match is 66.7%, every other command type is 100%. About 91% is roughly the ceiling this dataset allows, not a model limit.
-- **The template space is tiny.** There are only 24 distinct "grab" instructions and 90 distinct compound ones, so a 50k-example dataset is mostly exact repeats. Only 92 of the 500 held-out examples have an instruction string that never appears in the 8,000 training examples (almost all `move` with an unseen distance). That subset is reported separately above; it is 100% for the fine-tuned model, but it is a weak generalization test.
+- **All 45 v1 fine-tuned misses are `rotate` commands, and they were unanswerable.** Patterns like "Turn 90 degrees" or "Spin 180 degrees" contain no direction, but the v1 generator still picked a random direction and signed the angle with it (`robot.rotate(90)` vs `robot.rotate(-90)`). 99 of the 135 held-out rotate examples have no direction word, so their label was a coin flip; v1 rotate exact match is 66.7%, every other command type 100%. This is fixed in dataset v2, below.
+- **The template space is tiny.** There are only 24 distinct "grab" instructions and 90 distinct compound ones, so a 50k-example dataset is mostly exact repeats. Only 92 of the 500 held-out examples have an instruction string that never appears in the 8,000 training examples (almost all `move` with an unseen distance). That subset is reported separately; it is 100% for every fine-tuned model, but it is a weak generalization test.
 
-Commands:
+#### Dataset v2: deterministic rotate labels
+
+`src/jetson_llm/data.py` now gives a rotate instruction that states no direction the positive (default) angle, always; instructions and the RNG draw order are unchanged, so for the same seed v1 and v2 have identical instruction strings and differ only in those labels. v1 stays reproducible with `legacy_rotate=True` / `--dataset-version 1`; result files without a `dataset_version` key are v1. Retrained and re-evaluated with the same protocol (same seed, split sizes, hyperparameters, decoding):
+
+| Model | Labels evaluated | Weights | Exact match (500) | Rotate exact match (135) | Valid code | Eval peak mem (GB) |
+|---|---|---|---|---|---|---|
+| v1-trained LoRA, merged | v1 | FP16 | 91.0% | 66.7% | 100% | 2.18 |
+| v1-trained LoRA, merged | v2 | FP16 | 80.2% | 26.7% | 100% | 2.18 |
+| v2-trained LoRA, merged | v2 | FP16 | **100%** | 100% | 100% | 2.18 |
+| v2-trained LoRA, merged, then quantized | v2 | NF4 | **100%** | 100% | 100% | 0.85 |
+
+With a deterministic label the fine-tuned model gets every held-out example right at both FP16 and NF4, which confirms the v1 ceiling was label noise. The second row shows the v1 model had memorized the random signs rather than a default. v2 training: 500 steps, peak training memory 1.82 GB, final logged loss 0.0 (`results/train_tinyllama_v2.json`); its 733 s runtime is not comparable to v1's 373 s because a GGUF conversion was running on the same machine for part of it. At 100% this task no longer separates FP16 from NF4 at all, so it says nothing finer about quantization loss than "none visible here".
+
+Commands (v1; recorded before `--dataset-version` existed, so to reproduce them today add `--dataset-version 1` to each):
 ```
 python scripts/train_qlora.py --model-id TinyLlama/TinyLlama-1.1B-Chat-v1.0 --train-count 8000 --test-count 500 --seed 0 --adapter-dir runs/tinyllama_lora --stats results/train_tinyllama.json
 python scripts/eval_accuracy.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --quant fp16 --tag base_fp16_0shot --out results/eval_base_fp16_0shot.json
 python scripts/eval_accuracy.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --quant fp16 --shots 3 --tag base_fp16_3shot --out results/eval_base_fp16_3shot.json
 python scripts/eval_accuracy.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --merge-adapter runs/tinyllama_lora --merged-dir runs/tinyllama_merged --quant fp16 --tag ft_fp16 --out results/eval_ft_fp16.json
 python scripts/eval_accuracy.py --model runs/tinyllama_merged --quant int4-bnb --tag ft_nf4 --out results/eval_ft_nf4.json
+```
+
+Commands (v2; `--dataset-version 2` is the default and is spelled out here):
+```
+python scripts/train_qlora.py --model-id TinyLlama/TinyLlama-1.1B-Chat-v1.0 --train-count 8000 --test-count 500 --seed 0 --dataset-version 2 --adapter-dir runs/tinyllama_lora_v2 --stats results/train_tinyllama_v2.json
+python scripts/eval_accuracy.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --dataset-version 2 --merge-adapter runs/tinyllama_lora_v2 --merged-dir runs/tinyllama_merged_v2 --quant fp16 --tag ft_fp16_v2 --out results/eval_ft_fp16_v2.json
+python scripts/eval_accuracy.py --model runs/tinyllama_merged_v2 --dataset-version 2 --quant int4-bnb --tag ft_nf4_v2 --out results/eval_ft_nf4_v2.json
+python scripts/eval_accuracy.py --model runs/tinyllama_merged --dataset-version 2 --quant fp16 --tag ft_v1model_fp16_on_v2labels --out results/eval_ft_v1model_fp16_on_v2labels.json
 ```
 
 ### Latency and memory
@@ -239,8 +260,8 @@ Original Korean README preserved at [`docs/README.ko.md`](docs/README.ko.md).
 **Status: archived experiment notebooks** — a 2-day sprint (December 2025), kept as a record of the pipeline and its failure modes. Not a maintained tool.
 
 - The Llama-3 8B QLoRA run never completed on the free T4; the last recorded state is the FP32-upcast OOM. The TinyLlama measurement supports removing the upcast; it is untested at 8B.
-- A TinyLlama QLoRA fine-tune was completed and evaluated on a laptop RTX 5050 (91.0% exact match on held-out, unchanged at NF4). No on-device Orin / TensorRT-LLM numbers exist; the board is no longer available, see [Not measured](#not-measured-board-no-longer-available).
-- The synthetic dataset is templated and narrow (24 distinct grab instructions), and direction-less rotate commands get a random sign, which makes about 20% of held-out labels unpredictable.
+- A TinyLlama QLoRA fine-tune was completed and evaluated on a laptop RTX 5050 (91.0% exact match on held-out with the v1 labels, 100% after the dataset v2 rotate fix, unchanged at NF4 in both). No on-device Orin / TensorRT-LLM numbers exist; the board is no longer available, see [Not measured](#not-measured-board-no-longer-available).
+- The synthetic dataset is templated and narrow (24 distinct grab instructions). Dataset v1 gave direction-less rotate commands a random sign (about 20% of held-out labels unpredictable); v2 fixes that, and the task is now easy enough that the fine-tuned model scores 100%.
 - `requirements.txt` pins the Sep 2026 laptop environment; the Dec 2025 Colab versions were never recorded, and `convert_checkpoint.py` / `trtllm-build` flags have likely changed since.
 - CPU tests (`python -m pytest tests`) cover dataset determinism/format, splits and the scorer; the GPU scripts are not covered by CI.
 

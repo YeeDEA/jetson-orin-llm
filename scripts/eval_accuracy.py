@@ -62,6 +62,8 @@ def main():
     p.add_argument("--train-count", type=int, default=8000)
     p.add_argument("--test-count", type=int, default=500)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--dataset-version", type=int, choices=[1, 2], default=2,
+                   help="1 = notebook labels (random sign on direction-less rotate), 2 = fixed")
     p.add_argument("--batch", type=int, default=50)
     p.add_argument("--merge-adapter", help="LoRA adapter dir to merge into --model first (fp16)")
     p.add_argument("--merged-dir", help="where to save the merged fp16 checkpoint")
@@ -69,7 +71,8 @@ def main():
     p.add_argument("--out", type=Path, required=True)
     args = p.parse_args()
 
-    train, test = make_splits(args.train_count, args.test_count, args.seed)
+    train, test = make_splits(args.train_count, args.test_count, args.seed,
+                                      legacy_rotate=args.dataset_version == 1)
     unseen = unseen_mask(train, test)
 
     tok = AutoTokenizer.from_pretrained(args.model)
@@ -108,7 +111,7 @@ def main():
         "tag": args.tag, "model": args.model, "quant": args.quant, "shots": args.shots,
         "adapter": args.merge_adapter, "command": " ".join(sys.argv),
         "split": {"train_count": args.train_count, "test_count": args.test_count,
-                  "seed": args.seed, "unseen_instruction_count": sum(unseen)},
+                  "seed": args.seed, "dataset_version": args.dataset_version, "unseen_instruction_count": sum(unseen)},
         "scores": score(preds, [s["output"] for s in test], unseen),
         "eval_seconds": round(elapsed, 1),
         "peak_memory_gb": round(torch.cuda.max_memory_allocated() / 1024**3, 3),

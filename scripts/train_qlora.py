@@ -30,6 +30,8 @@ def main():
     p.add_argument("--train-count", type=int, default=8000)
     p.add_argument("--test-count", type=int, default=500)
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--dataset-version", type=int, choices=[1, 2], default=2,
+                   help="1 = notebook labels (random sign on direction-less rotate), 2 = fixed")
     p.add_argument("--epochs", type=float, default=1)
     p.add_argument("--batch-size", type=int, default=16)
     p.add_argument("--lr", type=float, default=2e-4)
@@ -40,7 +42,8 @@ def main():
     p.add_argument("--stats", type=Path, default=Path("results/train_tinyllama.json"))
     args = p.parse_args()
 
-    train_samples, _ = make_splits(args.train_count, args.test_count, args.seed)
+    train_samples, _ = make_splits(args.train_count, args.test_count, args.seed,
+                                      legacy_rotate=args.dataset_version == 1)
 
     from jetson_llm.train import train  # heavy imports after arg parsing
     _, stats = train(model_id=args.model_id, train_samples=train_samples,
@@ -48,7 +51,7 @@ def main():
                      prepare_kbit=not args.no_kbit_prep, epochs=args.epochs,
                      batch_size=args.batch_size, lr=args.lr, lora_r=args.lora_r)
     stats.update({"model": args.model_id, "command": " ".join(sys.argv),
-                  "train_count": args.train_count, "seed": args.seed,
+                  "train_count": args.train_count, "seed": args.seed, "dataset_version": args.dataset_version,
                   "kbit_prep": not args.no_kbit_prep, "lora_r": args.lora_r,
                   "batch_size": args.batch_size, "lr": args.lr, "epochs": args.epochs})
     args.stats.parent.mkdir(parents=True, exist_ok=True)
