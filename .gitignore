@@ -11,6 +11,7 @@ trained_adapter/
 *.bin
 *.engine
 *.plan
+*.gguf
 
 # datasets (regenerate with scripts/generate_dataset.py or notebooks/01-dataset-synthesis.ipynb)
 robot_dataset.json

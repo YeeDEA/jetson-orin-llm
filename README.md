@@ -20,7 +20,7 @@ The full flow was rehearsed end-to-end on TinyLlama-1.1B first — it iterates i
 
 ## Measured results (RTX 5050 laptop GPU, not the Orin)
 
-Added Sep 2026. **Everything in this section was measured on an NVIDIA GeForce RTX 5050 Laptop GPU (8 GB, driver 592.00), Intel Core 5 210H, Windows 11, Python 3.12.10, torch 2.13.0+cu130, transformers 4.57.6, bitsandbytes 0.50.2, peft 0.21.0** (pinned in `requirements.txt`). None of it is a Jetson Orin number and none of it uses TensorRT-LLM: the quantization here is bitsandbytes NF4/INT8 in plain PyTorch, which is a different thing from the INT4 AWQ TensorRT-LLM engine the pipeline targets. Every number below is copied from a JSON file in `results/`, and each JSON records the exact command that produced it.
+Added Sep 2026. **Everything in this section was measured on an NVIDIA GeForce RTX 5050 Laptop GPU (8 GB, driver 592.00), Intel Core 5 210H, Windows 11, Python 3.12.10, torch 2.13.0+cu130, transformers 4.57.6, bitsandbytes 0.50.2, peft 0.21.0** (pinned in `requirements.txt`). None of it is a Jetson Orin number and none of it uses TensorRT-LLM: the quantization here is bitsandbytes NF4/INT8 in plain PyTorch, plus llama.cpp GGUF (Q8_0 / Q4_K_M) in its own section, which is a different thing from the INT4 AWQ TensorRT-LLM engine the pipeline targets. Every number below is copied from a JSON file in `results/`, and each JSON records the exact command that produced it.
 
 ### Accuracy: what fine-tuning bought, what 4-bit cost
 
@@ -91,6 +91,34 @@ How to read it:
 - AWQ/GPTQ via `autoawq` / `gptqmodel` were tried and skipped: neither installs as a wheel on this Windows + torch 2.13 setup, and both source builds failed (`No module named 'torch'` in the isolated build; `unable to find vswhere.exe`).
 
 Commands: `python scripts/bench.py --model <id> --quant {fp16,int8-bnb,int4-bnb} --out results/bench_rtx5050_<name>_<quant>.json`; table from `python scripts/bench_table.py results/bench_*.json`.
+
+### Deployment format: GGUF via llama.cpp (not bitsandbytes)
+
+The NF4 rows above are bitsandbytes, i.e. a *training/memory* format run through HF `generate`. The format one would actually ship to a small device without TensorRT-LLM is a llama.cpp GGUF file, so the v2 fine-tuned merged checkpoint (`runs/tinyllama_merged_v2`) was converted to GGUF F16 with `convert_hf_to_gguf.py` from llama.cpp tag b10502 (the same build as the binaries used), then quantized with `llama-quantize` to Q8_0 and Q4_K_M. Binaries: the prebuilt `llama-b10502-bin-win-cuda-13.3-x64` release, all layers offloaded (`-ngl 99`). These numbers are not comparable one-to-one with the bitsandbytes table: different runtime, and llama-bench measures raw prompt processing / generation rather than a `generate()` call.
+
+| GGUF (v2 fine-tune) | File size | Prompt processing, pp512 (tok/s) | Generation, tg128 (tok/s) | Exact match, v2 labels (500) | Valid code |
+|---|---|---|---|---|---|
+| F16 | 2.20 GB | 5195 ± 1005 | 49.9 ± 1.1 | 100% | 100% |
+| Q8_0 | 1.17 GB | 6254 ± 1136 | 87.8 ± 0.9 | 100% | 100% |
+| Q4_K_M | 0.67 GB | 6043 ± 1112 | **103.2 ± 1.1** | **100%** | 100% |
+
+(mean ± standard deviation over 10 llama-bench repetitions; file size is llama-bench's `model_size`)
+
+- **Here 4-bit is a speed format.** Q4_K_M generates 2.1x faster than GGUF F16 on the same GPU, the opposite of bitsandbytes NF4 (0.79x of FP16 in the table above), at 30% of the F16 file size. Generation at batch 1 is weight-bandwidth-bound once the runtime is not host-bound, so fewer bytes per weight turns into tokens/s.
+- **No accuracy cost visible**: all three GGUF variants score 100% on the v2 held-out set. Because v2 is saturated, the v1 model was also converted and quantized to Q4_K_M and scored against v1 labels: 91.0% (rotate 66.7%), the same as its HF FP16 and NF4 scores. This task is too easy to resolve small quantization losses; it only shows that none broke the output.
+- Accuracy was measured through `llama-server`'s `/completion` endpoint with `scripts/eval_gguf.py`: the prompt is built and tokenized by the HF tokenizer exactly as in `eval_accuracy.py`, sent as token ids, greedy (temperature 0, top_k 1), 48 new tokens max. llama-bench does not report memory, so there is no memory column; the GGUF weights are not committed.
+
+Commands (`$L` = the llama.cpp CUDA binaries directory, `$LCPP` = a checkout of llama.cpp at tag b10502):
+```
+PYTHONPATH=$LCPP/gguf-py python $LCPP/convert_hf_to_gguf.py runs/tinyllama_merged_v2 --outtype f16 --outfile runs/gguf/ft_v2_f16.gguf
+$L/llama-quantize runs/gguf/ft_v2_f16.gguf runs/gguf/ft_v2_q8_0.gguf Q8_0
+$L/llama-quantize runs/gguf/ft_v2_f16.gguf runs/gguf/ft_v2_q4_k_m.gguf Q4_K_M
+$L/llama-bench -m runs/gguf/ft_v2_<q>.gguf -ngl 99 -p 512 -n 128 -r 10 -o json      # -> results/bench_rtx5050_tinyllama_ft_v2_gguf.json
+$L/llama-server -m runs/gguf/ft_v2_<q>.gguf -ngl 99 -c 2048 --port 8089
+python scripts/eval_gguf.py --tokenizer runs/tinyllama_merged_v2 --gguf runs/gguf/ft_v2_<q>.gguf --tag gguf_<q>_v2 --out results/eval_gguf_<q>_v2.json
+# v1 control: same conversion of runs/tinyllama_merged to Q4_K_M, then
+python scripts/eval_gguf.py --tokenizer runs/tinyllama_merged --gguf runs/gguf/ft_v1_q4_k_m.gguf --dataset-version 1 --tag gguf_q4_k_m_v1 --out results/eval_gguf_q4_k_m_v1.json
+```
 
 ### The k-bit prep upcast, measured
 
@@ -230,6 +258,7 @@ scripts/                       thin entrypoints over src/ and the shell command 
   generate_dataset.py          CLI for dataset synthesis
   train_qlora.py               QLoRA fine-tune on the seeded split
   eval_accuracy.py             held-out accuracy (base / merged fp16 / NF4)
+  eval_gguf.py                 held-out accuracy of a GGUF model via llama-server
   bench.py, bench_table.py     decode tok/s, TTFT, peak memory -> JSON -> README table
   kbit_prep_memory.py          training peak memory with vs without k-bit prep
   tinyllama_awq_rehearsal.sh   convert -> build -> run (from notebook 03)
