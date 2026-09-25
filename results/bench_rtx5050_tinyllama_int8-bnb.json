@@ -1,0 +1,56 @@
+{
+  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "quant": "int8-bnb",
+  "config": {
+    "prompt_tokens": 512,
+    "gen_tokens": 128,
+    "batch": 1,
+    "warmup": 3,
+    "runs": 10,
+    "sampling": "greedy",
+    "command": "scripts/bench.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --quant int8-bnb --out results/bench_rtx5050_tinyllama_int8-bnb.json"
+  },
+  "measurements": {
+    "decode_tokens_per_s_median": 7.03,
+    "decode_tokens_per_s_all": [
+      5.48,
+      7.33,
+      7.74,
+      6.94,
+      7.12,
+      8.07,
+      5.3,
+      6.23,
+      7.62,
+      5.86
+    ],
+    "ttft_s_median": 0.2064,
+    "ttft_s_all": [
+      0.3295,
+      0.1987,
+      0.2116,
+      0.2026,
+      0.1912,
+      0.2011,
+      0.199,
+      0.3048,
+      0.2225,
+      0.2101
+    ],
+    "peak_memory_gb": 1.306,
+    "weights_only_memory_gb": 1.197,
+    "model_load_s": 6.18
+  },
+  "environment": {
+    "name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+    "capability": "12.0",
+    "total_memory_gb": 7.96,
+    "torch": "2.13.0+cu130",
+    "cuda": "13.0",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+    "transformers": "4.57.6",
+    "bitsandbytes": "0.50.2",
+    "driver": "592.00"
+  }
+}

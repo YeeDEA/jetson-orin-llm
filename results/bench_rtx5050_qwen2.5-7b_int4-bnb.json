@@ -1,0 +1,56 @@
+{
+  "model": "Qwen/Qwen2.5-7B-Instruct",
+  "quant": "int4-bnb",
+  "config": {
+    "prompt_tokens": 512,
+    "gen_tokens": 128,
+    "batch": 1,
+    "warmup": 3,
+    "runs": 10,
+    "sampling": "greedy",
+    "command": "scripts/bench.py --model Qwen/Qwen2.5-7B-Instruct --quant int4-bnb --out results/bench_rtx5050_qwen2.5-7b_int4-bnb.json"
+  },
+  "measurements": {
+    "decode_tokens_per_s_median": 12.48,
+    "decode_tokens_per_s_all": [
+      11.89,
+      11.89,
+      14.54,
+      15.36,
+      11.61,
+      9.3,
+      11.88,
+      13.43,
+      13.06,
+      13.62
+    ],
+    "ttft_s_median": 0.673,
+    "ttft_s_all": [
+      0.66,
+      0.674,
+      0.672,
+      0.6631,
+      0.6659,
+      0.6619,
+      0.6981,
+      0.695,
+      0.6782,
+      0.6808
+    ],
+    "peak_memory_gb": 5.431,
+    "weights_only_memory_gb": 5.605,
+    "model_load_s": 36.27
+  },
+  "environment": {
+    "name": "NVIDIA GeForce RTX 5050 Laptop GPU",
+    "capability": "12.0",
+    "total_memory_gb": 7.96,
+    "torch": "2.13.0+cu130",
+    "cuda": "13.0",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cpu": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+    "transformers": "4.57.6",
+    "bitsandbytes": "0.50.2",
+    "driver": "592.00"
+  }
+}

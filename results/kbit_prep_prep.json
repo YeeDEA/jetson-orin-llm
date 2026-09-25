@@ -1,0 +1,26 @@
+{
+  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "variant": "prep",
+  "command": "scripts/kbit_prep_memory.py --variant prep --out results/kbit_prep_prep.json",
+  "config": {
+    "batch": 4,
+    "seq_len_padded": 512,
+    "lora_r": 64,
+    "compute": "fp16",
+    "steps": 10
+  },
+  "after_load_and_prep": {
+    "allocated_gb": 1.153,
+    "peak_gb": 1.154
+  },
+  "param_count_by_dtype": {
+    "float32": 131164160,
+    "uint8": 484442112,
+    "float32_trainable": 50462720
+  },
+  "train_peak_allocated_gb": 2.436,
+  "train_peak_reserved_gb": 2.898,
+  "error": null,
+  "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
+  "torch": "2.13.0+cu130"
+}

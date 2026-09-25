@@ -1,0 +1,153 @@
+{
+  "tag": "base_fp16_0shot",
+  "model": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+  "quant": "fp16",
+  "shots": 0,
+  "adapter": null,
+  "command": "scripts/eval_accuracy.py --model TinyLlama/TinyLlama-1.1B-Chat-v1.0 --quant fp16 --tag base_fp16_0shot --out results/eval_base_fp16_0shot.json",
+  "split": {
+    "train_count": 8000,
+    "test_count": 500,
+    "seed": 0,
+    "unseen_instruction_count": 92
+  },
+  "scores": {
+    "overall": {
+      "n": 500,
+      "exact_match": 0.0,
+      "valid_code": 0.0
+    },
+    "by_type": {
+      "complex": {
+        "n": 128,
+        "exact_match": 0.0,
+        "valid_code": 0.0
+      },
+      "grab": {
+        "n": 125,
+        "exact_match": 0.0,
+        "valid_code": 0.0
+      },
+      "move": {
+        "n": 112,
+        "exact_match": 0.0,
+        "valid_code": 0.0
+      },
+      "rotate": {
+        "n": 135,
+        "exact_match": 0.0,
+        "valid_code": 0.0
+      }
+    },
+    "unseen_instruction": {
+      "n": 92,
+      "exact_match": 0.0,
+      "valid_code": 0.0
+    }
+  },
+  "eval_seconds": 28.0,
+  "peak_memory_gb": 2.202,
+  "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
+  "examples": [
+    {
+      "instruction": "Navigate to bathroom, then grab the remote",
+      "reference": "robot.navigate('bathroom')\nrobot.grab('remote')",
+      "prediction": "To navigate to the bathroom in your home, follow these steps:\n\n1. Step 1: Turn on the lights.\n\n2. Step 2: Use the light switch to turn on the lights in the bathroom"
+    },
+    {
+      "instruction": "Grab that bottle",
+      "reference": "robot.grab('bottle')",
+      "prediction": "Sure, here's a revised version of the poem with the added line:\n\nBut the bottle's contents are a mystery,\nA secret that only you can unravel.\nThe scent of the"
+    },
+    {
+      "instruction": "Grab that remote",
+      "reference": "robot.grab('remote')",
+      "prediction": "Sure, here's a revised version of the script with the added line:\n\n\"Lights up! The remote is now in your hand. Press any key to start the movie.\"\n\nWith that, the remote"
+    },
+    {
+      "instruction": "Get the smartphone for me",
+      "reference": "robot.grab('smartphone')",
+      "prediction": "Sure, I'd be happy to help you find the perfect smartphone for your needs. Here are some tips to help you choose the right phone:\n\n1. Consider your budget: The first thing to consider is your budget"
+    },
+    {
+      "instruction": "Please advance 232cm left",
+      "reference": "robot.move('left', 232)",
+      "prediction": "The advancement of 232cm left is 232cm, which is the same as the previous step."
+    },
+    {
+      "instruction": "Find the trash in the kitchen",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('trash')",
+      "prediction": "To find the trash in the kitchen, follow these steps:\n\n1. Start by looking for the trash can in the kitchen. It should be located in a visible and accessible location, such as the countertop or the back"
+    },
+    {
+      "instruction": "Please advance 378cm front",
+      "reference": "robot.move('front', 378)",
+      "prediction": "The advancement of 378cm in front is 1.09 meters."
+    },
+    {
+      "instruction": "Go to the kitchen and bring me the smartphone",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('smartphone')",
+      "prediction": "Sure, here's how you can go to the kitchen and bring the smartphone:\n\n1. Turn off the lights and lock the door.\n\n2. Use the smartphone to locate the kitchen.\n\n3"
+    },
+    {
+      "instruction": "Turn 90 degrees",
+      "reference": "robot.rotate(-90)",
+      "prediction": "Sure, here's a possible solution for turning 90 degrees:\n\n1. Start by drawing a line from the center of the circle to the point where you want to turn it.\n\n2. Draw a line"
+    },
+    {
+      "instruction": "left 458cm, now",
+      "reference": "robot.move('left', 458)",
+      "prediction": "Yes, you can use the \"left\" and \"right\" keywords to specify the direction of the text. Here's an example:\n\n```\n<|assistant|>\n<|user|>\nCan you show"
+    },
+    {
+      "instruction": "Hold the remote",
+      "reference": "robot.grab('remote')",
+      "prediction": "Sure, here's a revised version of the script with the added scene:\n\nTitle: The Great Escape\n\nCharacters:\n- JASON: A seasoned escape artist who has been on countless"
+    },
+    {
+      "instruction": "Go to the entrance and bring me the trash",
+      "reference": "robot.navigate('entrance')\nrobot.grab('trash')",
+      "prediction": "Sure, I'd be happy to help you with that. Here are the steps to bring you the trash:\n\n1. Walk towards the entrance of the park.\n2. Turn right and walk towards the trash"
+    },
+    {
+      "instruction": "Hold the cup",
+      "reference": "robot.grab('cup')",
+      "prediction": "Sure, here's a revised version of the poem with the added lines:\n\nHold the cup,\nAnd let it sway\nWith the rhythm of the night\nAs the stars twinkle\n\nThe"
+    },
+    {
+      "instruction": "Go to the kitchen and bring me the bottle",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('bottle')",
+      "prediction": "As you enter the kitchen, you notice a large, stainless steel bottle sitting on the counter. You take a deep breath and approach it cautiously, knowing that you don't want to spill anything.\n\n"
+    },
+    {
+      "instruction": "Navigate to entrance, then grab the bottle",
+      "reference": "robot.navigate('entrance')\nrobot.grab('bottle')",
+      "prediction": "To navigate to the entrance of the cave, you can follow these steps:\n\n1. Start by finding a clearing or a spot where you can see the entrance.\n2. Look for a rock or a boulder that"
+    },
+    {
+      "instruction": "Pick up the cup",
+      "reference": "robot.grab('cup')",
+      "prediction": "Here's a revised version of the poem with the added line:\n\nThe cup, a symbol of hope and renewal,\nA reminder of the power of love and light.\nWith each sip, it brings"
+    },
+    {
+      "instruction": "Find the bottle in the kitchen",
+      "reference": "robot.navigate('kitchen')\nrobot.grab('bottle')",
+      "prediction": "To find the bottle in the kitchen, you can follow these steps:\n\n1. Start by looking for the bottle in the kitchen cabinets or drawers. If you can't find it, check the pantry or"
+    },
+    {
+      "instruction": "Hold the trash",
+      "reference": "robot.grab('trash')",
+      "prediction": "Sure, here's a revised version of the poem with the added lines:\n\nThe trash can's lid is a sly,\nSneaky thing, it's always on,\nIt'"
+    },
+    {
+      "instruction": "Go to the living room and bring me the smartphone",
+      "reference": "robot.navigate('living room')\nrobot.grab('smartphone')",
+      "prediction": "Sure, here's how you can go to the living room and bring the smartphone:\n\n1. Turn on the smartphone and connect it to the Wi-Fi network of the living room.\n2. Open the"
+    },
+    {
+      "instruction": "Go front for 73cm",
+      "reference": "robot.move('front', 73)",
+      "prediction": "I don't have access to the specific measurements of the front panel of the go front. However, based on the information provided in the given text, the go front is a 73cm tall panel that is designed to be installed"
+    }
+  ]
+}
