@@ -90,7 +90,8 @@ def time_prefill(model, input_ids) -> float:
     """Seconds until the first token is produced."""
     torch.cuda.synchronize()
     start = time.perf_counter()
-    model.generate(input_ids, max_new_tokens=1, do_sample=False)
+    model.generate(input_ids, attention_mask=torch.ones_like(input_ids),
+                   max_new_tokens=1, do_sample=False)
     torch.cuda.synchronize()
     return time.perf_counter() - start
 
@@ -102,6 +103,7 @@ def time_decode(model, input_ids, gen_tokens: int) -> tuple[float, int]:
     start = time.perf_counter()
     out = model.generate(
         input_ids,
+        attention_mask=torch.ones_like(input_ids),  # batch 1, no padding
         max_new_tokens=gen_tokens,
         min_new_tokens=gen_tokens,
         do_sample=False,
