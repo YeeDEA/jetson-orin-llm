@@ -116,3 +116,41 @@ def generate_dataset(target_count=50000, output_file="robot_dataset.json"):
     print(f"\n[Complete] Saved to {output_file}")
     print(f"File Size: {file_size:.2f} MB")
     return data
+
+
+def generate_samples(count, seed):
+    """Deterministic list of `count` samples drawn with a private RNG seeded by `seed`.
+
+    Uses the same templates and value ranges as ``generate_sample`` but does not
+    touch the global ``random`` state, so it is reproducible regardless of
+    what else ran in the process.
+    """
+    rng = random.Random(seed)
+    saved = random.getstate()
+    random.setstate(rng.getstate())
+    try:
+        return [generate_sample() for _ in range(count)]
+    finally:
+        random.setstate(saved)
+
+
+def make_splits(train_count, test_count, seed=0):
+    """Build (train, test) as two independent draws from the generator.
+
+    ``test`` is drawn with ``seed`` and ``train`` with ``seed + 1``, so no test
+    *sample* is ever in the training set. The template space is small (e.g. only
+    24 distinct "grab" instructions exist), so many test *instruction strings*
+    also occur in train; excluding them would remove whole command types from
+    training. Evaluation therefore reports accuracy on the full test set and on
+    the subset whose instruction string never appears in train
+    (see ``unseen_mask``).
+    """
+    test = generate_samples(test_count, seed)
+    train = generate_samples(train_count, seed + 1)
+    return train, test
+
+
+def unseen_mask(train, test):
+    """True for each test sample whose instruction string is absent from train."""
+    seen = {s["instruction"] for s in train}
+    return [s["instruction"] not in seen for s in test]

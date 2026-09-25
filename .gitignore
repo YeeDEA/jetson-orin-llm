@@ -3,7 +3,8 @@
 __pycache__/
 
 # training artifacts / checkpoints
-results/
+# results/*.json (small benchmark/eval records) ARE committed
+runs/
 trained_adapter/
 *.pth
 *.safetensors
